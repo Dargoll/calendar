@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendrier de Cycle Annuel avec Congés</title>
+  <style>
+    /* === Styles globaux === */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      margin: 0;
+      padding: 16px;
+      line-height: 1.5;
+    }
+
+    /* === Variables CSS pour cohérence === */
+    :root {
+      --primary-color: #090244;
+      --primary-light: #1a125e;
+      --secondary-color: #28a745;
+      --secondary-light: #20c997;
+      --border-radius: 8px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+      --transition: all 0.3s ease;
+    }
+
+    /* === Section configuration === */
+    .config-section {
+      max-width: 900px;
+      margin: 0 auto 24px auto;
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .config-header {
+      padding: 20px 24px;
+      background: linear-gradient(135deg, var(--secondary-color), var(--secondary-light));
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .config-header:hover { 
+      background: linear-gradient(135deg, var(--secondary-light), #17a2b8); 
+    }
+
+    .config-header h3 { 
+      margin: 0; 
+      font-size: 18px; 
+      font-weight: 600; 
+    }
+
+    .config-toggle { 
+      font-size: 20px; 
+      transition: transform 0.3s ease; 
+      font-weight: bold; 
+    }
+    .config-toggle.open { 
+      transform: rotate(180deg); 
+    }
+
+    .config-content { 
+      max-height: 0; 
+      overflow: hidden; 
+      transition: max-height 0.4s ease-out; 
+      opacity: 0; 
+    }
+    .config-content.open { 
+      max-height: 400px; 
+      opacity: 1; 
+      transition: max-height 0.4s ease-in, opacity 0.3s ease-in 0.1s; 
+    }
+
+    /* === FAB (Floating Action Button) === */
+    .config-compact {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: none;
+      z-index: 1000;
+    }
+
+    .config-compact-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--secondary-color), var(--secondary-light));
+      color: white;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+
+    .config-compact-btn:hover { 
+      transform: scale(1.06); 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
+    }
+
+    /* === Controls === */
+    .controls {
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 16px; 
+      align-items: center; 
+      justify-content: center;
+    }
+
+    .controls h3 { 
+      margin: 0; 
+      font-size: 16px; 
+      font-weight: 600; 
+    }
+
+    .config-inner { 
+      padding: 24px; 
+    }
+
+    /* === Wrapper pour la section Congés === */
+    .conges-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto 24px auto;
+    }
+
+    /* === Section gestion des congés === */
+    .conges-section {
+      width: 100%;
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .conges-header {
+      padding: 20px 24px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+      color: white; 
+      cursor: pointer; 
+      user-select: none;
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .conges-header:hover { 
+      background: linear-gradient(135deg, var(--primary-light), #2a1f6e); 
+    }
+    
+    .conges-header h3 { 
+      margin: 0; 
+      font-size: 18px; 
+      font-weight: 600; 
+    }
+    
+    .conges-toggle { 
+      font-size: 20px; 
+      transition: transform 0.3s ease; 
+      font-weight: bold; 
+    }
+    .conges-toggle.open { 
+      transform: rotate(180deg); 
+    }
+
+    .conges-content { 
+      max-height: 0; 
+      overflow: hidden; 
+      transition: max-height 0.4s ease-out; 
+      opacity: 0; 
+    }
+    .conges-content.open { 
+      max-height: 1000px; 
+      opacity: 1; 
+      transition: max-height 0.4s ease-in, opacity 0.3s ease-in 0.1s; 
+    }
+
+    .conges-inner { 
+      padding: 24px; 
+    }
+
+    /* === Soldes === */
+    .solde-section { 
+      background-color: #f8f9fa; 
+      border-radius: 6px; 
+      padding: 16px; 
+      margin-bottom: 24px; 
+      border-left: 4px solid var(--primary-color); 
+    }
+
+    .solde-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 16px; 
+    }
+    
+    .solde-item { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 4px; 
+    }
+    
+    .solde-item label { 
+      font-weight: 600; 
+      font-size: 14px; 
+      word-wrap: break-word; 
+      hyphens: auto; 
+    }
+    
+    .solde-item input { 
+      width: 100%; 
+    }
+
+    .solde-display { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+      gap: 12px; 
+      margin-top: 16px; 
+    }
+    
+    .solde-counter { 
+      background: white; 
+      padding: 12px; 
+      border-radius: 6px; 
+      border: 1px solid #ddd; 
+      text-align: center; 
+    }
+    
+    .solde-counter .label { 
+      font-size: 12px; 
+      color: #666; 
+      margin-bottom: 4px; 
+    }
+    
+    .solde-counter .value { 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: var(--primary-color); 
+    }
+    
+    .solde-counter .remaining { 
+      font-size: 14px; 
+      margin-top: 4px; 
+    }
+    
+    .solde-counter.negative .remaining { 
+      color: #dc3545; 
+      font-weight: bold; 
+    }
+    
+    .solde-counter.positive .remaining { 
+      color: var(--secondary-color); 
+    }
+
+    /* === Formulaires === */
+    input[type="date"], 
+    input[type="number"], 
+    select, 
+    button {
+      font-size: 14px; 
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      border: 1px solid #ccc;
+      transition: var(--transition);
+    }
+
+    input[type="date"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(9, 2, 68, 0.1);
+    }
+
+    button { 
+      background-color: var(--primary-color); 
+      color: white; 
+      font-weight: bold; 
+      cursor: pointer; 
+      border: none;
+    }
+    
+    button:hover { 
+      background-color: var(--primary-light); 
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .conges-form { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 12px; 
+      align-items: end; 
+      margin-bottom: 16px; 
+    }
+    
+    .form-group { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 4px; 
+    }
+    
+    .form-group label { 
+      font-weight: 600; 
+      font-size: 14px; 
+    }
+
+    .conges-list { 
+      max-height: 150px; 
+      overflow-y: auto; 
+      border: 1px solid #ddd; 
+      border-radius: 6px; 
+      padding: 8px; 
+    }
+    
+    .conge-item { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 6px 8px; 
+      margin: 4px 0; 
+      background-color: #f8f9fa; 
+      border-radius: 4px; 
+      font-size: 14px; 
+    }
+    
+    .delete-btn { 
+      background-color: #dc3545; 
+      color: white; 
+      border: none; 
+      border-radius: 4px; 
+      padding: 4px 8px; 
+      font-size: 12px; 
+      cursor: pointer; 
+    }
+    
+    .delete-btn:hover { 
+      background-color: #c82333; 
+    }
+
+    /* === En-tête de navigation === */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between; 
+      align-items: center;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+      color: white;
+      margin: 0 auto 20px auto;
+      max-width: 900px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+
+    .nav-btn {
+      background: rgba(255,255,255,0.2);
+      color: white; 
+      border: none; 
+      border-radius: 50%; 
+      width: 40px; 
+      height: 40px; 
+      font-size: 18px; 
+      cursor: pointer;
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      transition: var(--transition);
+    }
+    
+    .nav-btn:hover { 
+      background: rgba(255,255,255,0.3); 
+    }
+    
+    .nav-btn:disabled { 
+      background: rgba(255,255,255,0.1); 
+      cursor: not-allowed; 
+      opacity: 0.5; 
+    }
+
+    .month-title { 
+      font-size: 18px; 
+      font-weight: 600; 
+      text-align: center; 
+    }
+
+    /* === Grille du calendrier - OPTIMISATION LARGEURS === */
+    .calendar-container {
+      margin-bottom: 32px; /* Espace avant la légende */
+      display: none; /* Masqué par défaut */
+    }
+
+    .calendar-container.visible {
+      display: block;
+    }
+
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      justify-content: center;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .month-card {
+      border: 1px solid #ccc; 
+      border-radius: var(--border-radius); 
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: white; 
+      display: flex; 
+      flex-direction: column;
+      /* Hauteur généreuse pour être sûr */
+      height: 800px;
+      width: 100%;
+    }
+
+    .month-label {
+      text-align: center; 
+      font-weight: bold; 
+      background-color: var(--primary-color); 
+      color: white; 
+      padding: 8px; 
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* === Tables === */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      font-size: 11px; 
+      flex: 1;
+      display: table;
+    }
+    
+    tbody {
+      height: 100%;
+      display: table-row-group;
+    }
+    
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 1px 2px; 
+      text-align: center; 
+      height: 18px; 
+      vertical-align: middle;
+      line-height: 1.1;
+    }
+    
+    th { 
+      background-color: #f2f2f2; 
+      font-weight: 600; 
+      height: 22px;
+      font-size: 10px;
+    }
+    
+    /* Largeurs des colonnes optimisées */
+    td:nth-child(1), th:nth-child(1) { width: 18%; }
+    td:nth-child(2), th:nth-child(2) { width: 12%; }
+    td:nth-child(3), th:nth-child(3) { width: 70%; }
+
+    /* === Statuts === */
+    .travail { 
+      background-color: #009ee0; 
+      color: white; 
+      font-weight: bold; 
+    }
+    
+    .rc { 
+      color: #000; 
+    }
+    
+    .rl { 
+      background-color: #ffffff; 
+      color: #000; 
+    }
+
+    /* === Jours spéciaux === */
+    td.vacances { 
+      background-color: #d4edda !important; 
+      font-weight: bold; 
+    }
+    
+    td.ferie { 
+      background-color: #ffe8e6 !important; 
+      font-weight: bold; 
+    }
+    
+    td.conge-perso { 
+      background-color: #fff3cd !important; 
+      font-weight: bold; 
+    }
+
+    /* === Légende sur deux lignes === */
+    .legend {
+      max-width: 900px; 
+      margin: 0 auto 24px auto; 
+      padding: 16px; 
+      background: white; 
+      border-radius: var(--border-radius); 
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+    
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .legend-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      font-size: 14px; 
+    }
+    
+    .legend-color { 
+      width: 20px; 
+      height: 20px; 
+      border-radius: 4px; 
+      border: 1px solid #ccc; 
+      flex-shrink: 0;
+    }
+
+    /* === Responsive Design === */
+    @media (max-width: 1400px) {
+      .year-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .year-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 960px) { 
+      .conges-wrapper { 
+        max-width: 100%; 
+      } 
+    }
+
+    @media (max-width: 768px) {
+      .conges-wrapper { 
+        flex-direction: row; 
+        align-items: flex-start; 
+        justify-content: center; 
+      }
+      
+      .controls { 
+        flex-direction: column; 
+        align-items: stretch; 
+        gap: 20px; 
+      }
+      
+      .controls > div { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 8px; 
+        width: 100%; 
+      }
+      
+      .controls h3 { 
+        margin: 0; 
+        text-align: left; 
+      }
+      
+      .controls input, .controls select, .controls button { 
+        width: 100%; 
+      }
+      
+      .solde-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+      }
+      
+      .year-grid { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 16px; 
+      }
+      
+      .month-card { 
+        height: auto;
+        min-width: 100% !important; 
+        max-width: 100% !important; 
+      }
+      
+      .month-card .month-label { 
+        display: none; 
+      }
+
+      /* Ajustement des cellules pour mobile */
+      th, td { 
+        height: 32px; 
+        padding: 6px 4px;
+        font-size: 14px;
+        line-height: 1.3;
+      }
+      
+      th { 
+        height: 36px;
+        font-size: 13px;
+      }
+      
+      table {
+        font-size: 14px;
+      }
+
+      .legend {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .legend-row {
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 480px) { 
+      .solde-grid { 
+        grid-template-columns: 1fr; 
+      }
+      
+      .legend-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .legend-item {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- SECTION CONFIG -->
+  <div class="config-section" id="configSection">
+    <div class="config-header" id="configHeader">
+      <h3>⚙️ Configuration du Calendrier</h3>
+      <span class="config-toggle" id="configToggle">▼</span>
+    </div>
+    <div class="config-content open" id="configContent">
+      <div class="config-inner">
+        <div class="controls">
+          <div>
+            <h3>Cycle :</h3>
+            <select id="cycle">
+              <option value="4-2">4/2</option>
+              <option value="3-3">3/3</option>
+              <option value="2-2-3-2-2-3">2/2/3 - 2/2/3</option>
+            </select>
+          </div>
+          <div>
+            <h3>Date de départ :</h3>
+            <input type="date" id="startDate" />
+          </div>
+          <div>
+            <h3>Zone scolaire :</h3>
+            <select id="zoneScolaire">
+              <option value="Aucune">Aucune</option>
+              <option value="A">Zone A</option>
+              <option value="B">Zone B</option>
+              <option value="C">Zone C</option>
+            </select>
+          </div>
+          <div>
+            <button id="generateBtn">Générer le calendrier</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONGÉS -->
+  <div class="conges-wrapper">
+    <div class="conges-section">
+      <div class="conges-header" id="congesHeader">
+        <h3>🗂️ Gestion des Congés Personnels</h3>
+        <span class="conges-toggle" id="congesToggle">▼</span>
+      </div>
+      <div class="conges-content" id="congesContent">
+        <div class="conges-inner">
+          <div class="solde-section">
+            <h4 style="margin-top: 0;">💼 Solde des Congés</h4>
+            <div class="solde-grid">
+              <div class="solde-item">
+                <label for="soldeCP">Congés Annuels (CA) (jours) :</label>
+                <input type="number" id="soldeCP" min="0" step="0.5" value="25">
+              </div>
+              <div class="solde-item">
+                <label for="soldeRTT">ARTT (jours) :</label>
+                <input type="number" id="soldeRTT" min="0" step="0.5" value="10">
+              </div>
+              <div class="solde-item">
+                <label for="soldeMaladie">Crédits Fériés (CF) (jours) :</label>
+                <input type="number" id="soldeMaladie" min="0" step="0.5" value="0">
+              </div>
+              <div class="solde-item">
+                <label for="soldeFormation">Heures supp. (HS) (jours) :</label>
+                <input type="number" id="soldeFormation" min="0" step="0.5" value="5">
+              </div>
+            </div>
+            <button id="updateSolde">Mettre à jour les soldes</button>
+            <div class="solde-display" id="soldeDisplay"></div>
+          </div>
+
+          <div class="conges-form">
+            <div class="form-group">
+              <label for="congeDebut">Date de début :</label>
+              <input type="date" id="congeDebut">
+            </div>
+            <div class="form-group">
+              <label for="congeFin">Date de fin :</label>
+              <input type="date" id="congeFin">
+            </div>
+            <div class="form-group">
+              <label for="congeType">Type :</label>
+              <select id="congeType">
+                <option value="CA">Congés Annuels (CA)</option>
+                <option value="ARTT">ARTT</option>
+                <option value="CF">Crédits Fériés (CF)</option>
+                <option value="HS">Heures supp. (HS)</option>
+                <option value="CS">Congé Sans Solde</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="congeJours">Nb jours utilisés :</label>
+              <input type="number" id="congeJours" min="0.5" step="0.5" placeholder="Saisir" required>
+            </div>
+            <button id="ajouterConge">Ajouter</button>
+          </div>
+
+          <div class="conges-list" id="congesList">
+            <em>Aucun congé enregistré</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAB config -->
+  <div class="config-compact" id="configCompact">
+    <button class="config-compact-btn" id="configCompactBtn" title="Configuration du calendrier">⚙️</button>
+  </div>
+
+  <div class="calendar-container">
+    <div class="calendar-header" id="calendarHeader" style="display: none;">
+      <button class="nav-btn" id="prevMonth" aria-label="Précédent">‹</button>
+      <div class="month-title" id="monthTitle">Janvier 2025</div>
+      <button class="nav-btn" id="nextMonth" aria-label="Suivant">›</button>
+    </div>
+    <div id="calendarYear" class="year-grid"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-row">
+      <div class="legend-item">
+        <div class="legend-color travail"></div>
+        <span>Travail</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #d4edda;"></div>
+        <span>Vacances scolaires</span>
+      </div>
+    </div>
+    <div class="legend-row">
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #ffe8e6;"></div>
+        <span>Jours fériés</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #fff3cd;"></div>
+        <span>Congés personnels</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Variables DOM
+      const elements = {
+        cycle: document.getElementById('cycle'),
+        startDate: document.getElementById('startDate'),
+        zoneScolaire: document.getElementById('zoneScolaire'),
+        generateBtn: document.getElementById('generateBtn'),
+        calendarContainer: document.getElementById('calendarYear'),
+        
+        congeDebut: document.getElementById('congeDebut'),
+        congeFin: document.getElementById('congeFin'),
+        congeType: document.getElementById('congeType'),
+        congeJours: document.getElementById('congeJours'),
+        ajouterConge: document.getElementById('ajouterConge'),
+        congesList: document.getElementById('congesList'),
+        
+        configSection: document.getElementById('configSection'),
+        configHeader: document.getElementById('configHeader'),
+        configContent: document.getElementById('configContent'),
+        configToggle: document.getElementById('configToggle'),
+        configCompact: document.getElementById('configCompact'),
+        configCompactBtn: document.getElementById('configCompactBtn'),
+        
+        congesHeader: document.getElementById('congesHeader'),
+        congesContent: document.getElementById('congesContent'),
+        congesToggle: document.getElementById('congesToggle'),
+        
+        calendarHeader: document.getElementById('calendarHeader'),
+        prevMonth: document.getElementById('prevMonth'),
+        nextMonth: document.getElementById('nextMonth'),
+        monthTitle: document.getElementById('monthTitle'),
+        
+        soldeCP: document.getElementById('soldeCP'),
+        soldeRTT: document.getElementById('soldeRTT'),
+        soldeMaladie: document.getElementById('soldeMaladie'),
+        soldeFormation: document.getElementById('soldeFormation'),
+        updateSolde: document.getElementById('updateSolde'),
+        soldeDisplay: document.getElementById('soldeDisplay')
+      };
+
+      // Variables d'état
+      let state = {
+        congesPersonnels: [],
+        soldesInitiaux: { CA: 25, ARTT: 10, CF: 0, HS: 5 },
+        congesPanelOpen: false,
+        configPanelOpen: true,
+        currentMonthIndex: 0,
+        currentYear: new Date().getFullYear(),
+        isMobileMode: false
+      };
+
+      // Event Listeners
+      const setupEventListeners = () => {
+        elements.generateBtn.addEventListener('click', generateYear);
+        elements.ajouterConge.addEventListener('click', ajouterConge);
+        elements.configHeader.addEventListener('click', toggleConfigPanel);
+        elements.configCompactBtn.addEventListener('click', showConfigPanel);
+        elements.congesHeader.addEventListener('click', toggleCongesPanel);
+        elements.prevMonth.addEventListener('click', goToPrev);
+        elements.nextMonth.addEventListener('click', goToNext);
+        elements.updateSolde.addEventListener('click', updateSoldes);
+        window.addEventListener('resize', checkMobileMode);
+      };
+
+      // Fonctions utilitaires
+      const utils = {
+        formatDate: (date) => new Date(date).toLocaleDateString('fr-FR'),
+        getMonthName: (index) => new Date(0, index).toLocaleString('fr-FR', { month: 'long' }),
+        capitalize: (str) => str.charAt(0).toUpperCase() + str.slice(1),
+        diffInDays: (date1, date2) => {
+          const utc1 = Date.UTC(date1.getUTCFullYear(), date1.getUTCMonth(), date1.getUTCDate());
+          const utc2 = Date.UTC(date2.getUTCFullYear(), date2.getUTCMonth(), date2.getUTCDate());
+          return Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+        }
+      };
+
+      // Gestion des panneaux
+      const showConfigPanel = () => {
+        elements.configSection.style.display = 'block';
+        elements.configCompact.style.display = 'none';
+        if (!state.configPanelOpen) {
+          state.configPanelOpen = true;
+          elements.configContent.classList.add('open');
+          elements.configToggle.classList.add('open');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      };
+
+      const hideConfigAndShowIcon = () => {
+        state.configPanelOpen = false;
+        elements.configContent.classList.remove('open');
+        elements.configToggle.classList.remove('open');
+        setTimeout(() => {
+          elements.configSection.style.display = 'none';
+          elements.configCompact.style.display = 'block';
+        }, 400);
+      };
+
+      const toggleConfigPanel = () => {
+        state.configPanelOpen ? hideConfigAndShowIcon() : showConfigPanel();
+      };
+
+      const toggleCongesPanel = () => {
+        state.congesPanelOpen = !state.congesPanelOpen;
+        elements.congesContent.classList.toggle('open', state.congesPanelOpen);
+        elements.congesToggle.classList.toggle('open', state.congesPanelOpen);
+      };
+
+      // Gestion responsive
+      const checkMobileMode = () => {
+        state.isMobileMode = window.innerWidth <= 768;
+        setupCalendarDisplay();
+      };
+
+      const setupCalendarDisplay = () => {
+        const monthCards = document.querySelectorAll('.month-card');
+        if (!monthCards.length) return;
+
+        if (state.isMobileMode) {
+          monthCards.forEach((card, index) => {
+            card.style.display = index === state.currentMonthIndex ? 'flex' : 'none';
+          });
+          updateNavigationButtons();
+          updateHeaderTitleMobile();
+        } else {
+          const start = Math.floor(state.currentMonthIndex / 6) * 6;
+          const end = start + 5;
+          monthCards.forEach((card, index) => {
+            card.style.display = (index >= start && index <= end) ? 'flex' : 'none';
+          });
+          updateNavigationButtons();
+          updateHeaderTitleDesktop(start, end);
+        }
+      };
+
+      const goToPrev = () => {
+        if (state.isMobileMode) {
+          if (state.currentMonthIndex > 0) state.currentMonthIndex -= 1;
+        } else {
+          if (Math.floor(state.currentMonthIndex / 6) === 1) state.currentMonthIndex = 0;
+        }
+        setupCalendarDisplay();
+      };
+
+      const goToNext = () => {
+        if (state.isMobileMode) {
+          if (state.currentMonthIndex < 11) state.currentMonthIndex += 1;
+        } else {
+          if (Math.floor(state.currentMonthIndex / 6) === 0) state.currentMonthIndex = 6;
+        }
+        setupCalendarDisplay();
+      };
+
+      const updateNavigationButtons = () => {
+        if (state.isMobileMode) {
+          elements.prevMonth.disabled = state.currentMonthIndex === 0;
+          elements.nextMonth.disabled = state.currentMonthIndex === 11;
+        } else {
+          const onFirstHalf = Math.floor(state.currentMonthIndex / 6) === 0;
+          elements.prevMonth.disabled = onFirstHalf;
+          elements.nextMonth.disabled = !onFirstHalf;
+        }
+      };
+
+      const updateHeaderTitleMobile = () => {
+        elements.monthTitle.textContent = `${utils.capitalize(utils.getMonthName(state.currentMonthIndex))} ${state.currentYear}`;
+      };
+
+      const updateHeaderTitleDesktop = (start, end) => {
+        const startName = utils.capitalize(utils.getMonthName(start));
+        const endName = utils.capitalize(utils.getMonthName(end));
+        elements.monthTitle.textContent = `${startName} — ${endName} ${state.currentYear}`;
+      };
+
+      // Gestion des cycles
+      const getCyclePattern = (cycleStr) => {
+        const parts = cycleStr.split('-').map(Number);
+        let pattern = [];
+        parts.forEach((count, i) => {
+          let labels;
+          if (i % 2 === 0) {
+            labels = Array(count).fill('Travail');
+          } else {
+            if (count === 1) labels = ['RL'];
+            else if (count === 2) labels = ['RC', 'RL'];
+            else if (count === 3) labels = ['RC', 'RC', 'RL'];
+            else labels = Array(count).fill('Repos');
+          }
+          pattern.push(...labels);
+        });
+        return pattern;
+      };
+
+      // Gestion des congés
+      const calculerSoldesUtilises = () => {
+        const utilises = { CA: 0, ARTT: 0, CF: 0, HS: 0, CS: 0, Autre: 0 };
+        state.congesPersonnels.forEach(conge => {
+          utilises[conge.type] = (utilises[conge.type] || 0) + conge.nombreJours;
+        });
+        return utilises;
+      };
+
+      const afficherSoldes = () => {
+        const utilises = calculerSoldesUtilises();
+        const types = [
+          { key: 'CA', label: 'Congés Annuels', hasInitial: true },
+          { key: 'ARTT', label: 'ARTT', hasInitial: true },
+          { key: 'CF', label: 'Crédits Fériés', hasInitial: true },
+          { key: 'HS', label: 'Heures supp.', hasInitial: true },
+          { key: 'CS', label: 'Congé Sans Solde', hasInitial: false },
+          { key: 'Autre', label: 'Autre', hasInitial: false }
+        ];
+
+        let html = '';
+        types.forEach(type => {
+          const utilise = utilises[type.key] || 0;
+          if (type.hasInitial) {
+            const initial = state.soldesInitiaux[type.key] || 0;
+            const restant = initial - utilise;
+            const statusClass = restant < 0 ? 'negative' : 'positive';
+            html += `<div class="solde-counter ${statusClass}">
+                       <div class="label">${type.label}</div>
+                       <div class="value">${utilise}/${initial}</div>
+                       <div class="remaining">Restant: ${restant} jours</div>
+                     </div>`;
+          } else if (utilise > 0) {
+            html += `<div class="solde-counter">
+                       <div class="label">${type.label}</div>
+                       <div class="value">${utilise}</div>
+                       <div class="remaining">jours pris</div>
+                     </div>`;
+          }
+        });
+        elements.soldeDisplay.innerHTML = html || '<p>Aucun congé pris</p>';
+      };
+
+      const updateSoldes = () => {
+        state.soldesInitiaux = {
+          CA: parseFloat(elements.soldeCP.value) || 0,
+          ARTT: parseFloat(elements.soldeRTT.value) || 0,
+          CF: parseFloat(elements.soldeMaladie.value) || 0,
+          HS: parseFloat(elements.soldeFormation.value) || 0,
+        };
+        afficherSoldes();
+      };
+
+      const ajouterConge = () => {
+        const debut = elements.congeDebut.value;
+        const fin = elements.congeFin.value;
+        const type = elements.congeType.value;
+        const nombreJours = parseFloat(elements.congeJours.value);
+
+        if (!debut || !fin || !nombreJours || nombreJours <= 0 || new Date(debut) > new Date(fin)) {
+          alert('Veuillez vérifier les dates et le nombre de jours saisis.');
+          return;
+        }
+
+        state.congesPersonnels.push({
+          id: Date.now(),
+          debut,
+          fin,
+          type,
+          nombreJours
+        });
+
+        afficherListeConges();
+        afficherSoldes();
+        generateYear();
+
+        // Reset du formulaire
+        elements.congeDebut.value = '';
+        elements.congeFin.value = '';
+        elements.congeJours.value = '';
+      };
+
+      const supprimerConge = (id) => {
+        state.congesPersonnels = state.congesPersonnels.filter(conge => conge.id !== id);
+        afficherListeConges();
+        afficherSoldes();
+        generateYear();
+      };
+
+      // Exposition globale pour les boutons de suppression
+      window.supprimerConge = supprimerConge;
+
+      const afficherListeConges = () => {
+        if (state.congesPersonnels.length === 0) {
+          elements.congesList.innerHTML = '<em>Aucun congé enregistré</em>';
+          return;
+        }
+
+        elements.congesList.innerHTML = state.congesPersonnels.map(conge => {
+          const debutFormatted = utils.formatDate(conge.debut);
+          const finFormatted = utils.formatDate(conge.fin);
+          return `<div class="conge-item">
+                    <span>${debutFormatted} - ${finFormatted} (${conge.type}) - ${conge.nombreJours} jour${conge.nombreJours > 1 ? 's' : ''}</span>
+                    <button class="delete-btn" onclick="supprimerConge(${conge.id})">Supprimer</button>
+                  </div>`;
+        }).join('');
+      };
+
+      const isDateInCongesPersonnels = (dateKey) => {
+        const checkDate = new Date(dateKey);
+        return state.congesPersonnels.some(conge => {
+          const debut = new Date(conge.debut);
+          const fin = new Date(conge.fin);
+          return checkDate >= debut && checkDate <= fin;
+        });
+      };
+
+      // Génération du calendrier
+      const generateYear = async () => {
+        const startDateValue = elements.startDate.value;
+        if (!startDateValue) {
+          alert('Veuillez sélectionner une date de départ.');
+          return;
+        }
+
+        hideConfigAndShowIcon();
+
+        elements.generateBtn.textContent = 'Chargement...';
+        elements.generateBtn.disabled = true;
+
+        try {
+          const startDate = new Date(startDateValue + 'T00:00:00Z');
+          const year = startDate.getUTCFullYear();
+          const selectedZone = elements.zoneScolaire.value;
+
+          // Récupération des données externes
+          const [holidays, vacations1, vacations2] = await Promise.all([
+            fetch(`https://calendrier.api.gouv.fr/jours-feries/metropole/${year}.json`)
+              .then(res => res.ok ? res.json() : {}),
+            fetch(`https://data.education.gouv.fr/api/v2/catalog/datasets/fr-en-calendrier-scolaire/records?where=annee_scolaire%3D%22${year-1}-${year}%22&limit=50`)
+              .then(res => res.ok ? res.json() : { records: [] }),
+            fetch(`https://data.education.gouv.fr/api/v2/catalog/datasets/fr-en-calendrier-scolaire/records?where=annee_scolaire%3D%22${year}-${year+1}%22&limit=50`)
+              .then(res => res.ok ? res.json() : { records: [] })
+          ]);
+
+          const holidaySet = new Set(Object.keys(holidays || {}));
+          const vacationSet = new Set();
+
+          // Traitement des vacances scolaires
+          const processVacations = (vacationsData) => {
+            if (vacationsData.records && selectedZone !== 'Aucune') {
+              vacationsData.records.forEach(record => {
+                const field = record.record.fields;
+                if (field.zones && field.zones.includes(selectedZone)) {
+                  let start = new Date(field.start_date);
+                  let end = new Date(field.end_date);
+                  let currentDate = new Date(start.getTime());
+                  currentDate.setDate(currentDate.getDate() + 1);
+                  
+                  while (currentDate < end) {
+                    const y = currentDate.getFullYear();
+                    const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const d = String(currentDate.getDate()).padStart(2, '0');
+                    vacationSet.add(`${y}-${m}-${d}`);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                  }
+                }
+              });
+            }
+          };
+
+          processVacations(vacations1);
+          processVacations(vacations2);
+
+          const cyclePattern = getCyclePattern(elements.cycle.value);
+          const cycleLength = cyclePattern.length;
+          let monthsHtml = [];
+
+          // Génération des mois
+          for (let month = 0; month < 12; month++) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let tableHtml = `<table>
+                              <thead>
+                                <tr><th>Jour</th><th>J</th><th>Statut</th></tr>
+                              </thead>
+                              <tbody>`;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+              const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const currentDateUTC = new Date(Date.UTC(year, month, day));
+              const dayDiff = utils.diffInDays(startDate, currentDateUTC);
+              const indexInCycle = (dayDiff % cycleLength + cycleLength) % cycleLength;
+              const statut = cyclePattern[indexInCycle];
+              const jourLettre = currentDateUTC.toLocaleDateString('fr-FR', { 
+                weekday: 'short', 
+                timeZone: 'UTC' 
+              }).charAt(0).toUpperCase();
+
+              const isVacances = vacationSet.has(dateKey);
+              const isFerie = holidaySet.has(dateKey);
+              const isConge = isDateInCongesPersonnels(dateKey);
+
+              let dayClass = isConge ? 'conge-perso' : (isVacances ? 'vacances' : '');
+              let letterClass = isConge ? 'conge-perso' : (isFerie ? 'ferie' : '');
+              const statutClass = statut === 'Travail' ? 'travail' : (statut === 'RC' ? 'rc' : 'rl');
+
+              const title = holidays && holidays[dateKey] ? holidays[dateKey] : 
+                           (isConge ? 'Congé personnel' : '');
+
+              tableHtml += `<tr>
+                              <td class="${dayClass}" title="${title}">${day}</td>
+                              <td class="${letterClass}">${jourLettre}</td>
+                              <td class="${statutClass}">${statut}</td>
+                            </tr>`;
+            }
+
+            tableHtml += `</tbody></table>`;
+
+            let monthCardHtml = `<div class="month-card">
+                                   <div class="month-label">${utils.capitalize(utils.getMonthName(month))} ${year}</div>
+                                   ${tableHtml}
+                                 </div>`;
+            monthsHtml.push(monthCardHtml);
+          }
+
+          elements.calendarContainer.innerHTML = monthsHtml.join('');
+
+          // Afficher le container de calendrier complet après génération
+          document.querySelector('.calendar-container').classList.add('visible');
+
+          state.currentYear = year;
+          const today = new Date();
+          state.currentMonthIndex = (year === today.getFullYear()) ? today.getMonth() : 0;
+
+          setTimeout(checkMobileMode, 10);
+
+        } catch (error) {
+          console.error('Erreur lors de la génération:', error);
+          alert('Erreur lors de la génération du calendrier. Veuillez réessayer.');
+        } finally {
+          elements.generateBtn.textContent = 'Générer le calendrier';
+          elements.generateBtn.disabled = false;
+        }
+      };
+
+      // Initialisation
+      const init = () => {
+        setupEventListeners();
+        elements.startDate.value = new Date().toISOString().split('T')[0];
+        state.currentMonthIndex = new Date().getMonth();
+        elements.configToggle.classList.add('open');
+        afficherListeConges();
+        afficherSoldes();
+        checkMobileMode();
+      };
+
+      init();
+    });
+  </script>
+</body>
+</html>
