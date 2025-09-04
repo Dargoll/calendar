@@ -405,10 +405,10 @@
       text-align: center; 
     }
 
-    /* === Grille du calendrier - OPTIMISATION LARGEURS === */
+    /* === Grille du calendrier === */
     .calendar-container {
-      margin-bottom: 32px; /* Espace avant la légende */
-      display: none; /* Masqué par défaut */
+      margin-bottom: 32px;
+      display: none;
     }
 
     .calendar-container.visible {
@@ -432,7 +432,6 @@
       background: white; 
       display: flex; 
       flex-direction: column;
-      /* Hauteur généreuse pour être sûr */
       height: 800px;
       width: 100%;
     }
@@ -514,7 +513,7 @@
       font-weight: bold; 
     }
 
-    /* === Légende sur deux lignes === */
+    /* === Légende === */
     .legend {
       max-width: 900px; 
       margin: 0 auto 24px auto; 
@@ -618,10 +617,9 @@
       }
       
       .month-card .month-label { 
-        display: none; 
+        display: block; 
       }
 
-      /* Ajustement des cellules pour mobile */
       th, td { 
         height: 32px; 
         padding: 6px 4px;
@@ -677,8 +675,11 @@
           <div>
             <h3>Cycle :</h3>
             <select id="cycle">
-              <option value="4-2">4/2</option>
+              <option value="1-1">1/1</option>
+              <option value="2-2">2/2</option>
               <option value="3-3">3/3</option>
+              <option value="4-2">4/2</option>
+              <option value="5-2">5/2</option>
               <option value="2-2-3-2-2-3">2/2/3 - 2/2/3</option>
             </select>
           </div>
@@ -927,37 +928,55 @@
         const monthCards = document.querySelectorAll('.month-card');
         if (!monthCards.length) return;
 
+        elements.calendarHeader.style.display = 'flex';
+
         if (state.isMobileMode) {
+          // Mode mobile : un seul mois affiché
           monthCards.forEach((card, index) => {
             card.style.display = index === state.currentMonthIndex ? 'flex' : 'none';
           });
           updateNavigationButtons();
           updateHeaderTitleMobile();
         } else {
-          const start = Math.floor(state.currentMonthIndex / 6) * 6;
-          const end = start + 5;
+          // Mode desktop : 6 mois affichés par groupe
+          const startIndex = Math.floor(state.currentMonthIndex / 6) * 6;
+          const endIndex = Math.min(startIndex + 5, 11);
           monthCards.forEach((card, index) => {
-            card.style.display = (index >= start && index <= end) ? 'flex' : 'none';
+            card.style.display = (index >= startIndex && index <= endIndex) ? 'flex' : 'none';
           });
           updateNavigationButtons();
-          updateHeaderTitleDesktop(start, end);
+          updateHeaderTitleDesktop(startIndex, endIndex);
         }
       };
 
       const goToPrev = () => {
         if (state.isMobileMode) {
-          if (state.currentMonthIndex > 0) state.currentMonthIndex -= 1;
+          // Mobile : mois par mois
+          if (state.currentMonthIndex > 0) {
+            state.currentMonthIndex -= 1;
+          }
         } else {
-          if (Math.floor(state.currentMonthIndex / 6) === 1) state.currentMonthIndex = 0;
+          // Desktop : par groupe de 6 mois
+          const currentGroup = Math.floor(state.currentMonthIndex / 6);
+          if (currentGroup > 0) {
+            state.currentMonthIndex = (currentGroup - 1) * 6;
+          }
         }
         setupCalendarDisplay();
       };
 
       const goToNext = () => {
         if (state.isMobileMode) {
-          if (state.currentMonthIndex < 11) state.currentMonthIndex += 1;
+          // Mobile : mois par mois
+          if (state.currentMonthIndex < 11) {
+            state.currentMonthIndex += 1;
+          }
         } else {
-          if (Math.floor(state.currentMonthIndex / 6) === 0) state.currentMonthIndex = 6;
+          // Desktop : par groupe de 6 mois
+          const currentGroup = Math.floor(state.currentMonthIndex / 6);
+          if (currentGroup < 1) {
+            state.currentMonthIndex = 6;
+          }
         }
         setupCalendarDisplay();
       };
@@ -967,9 +986,9 @@
           elements.prevMonth.disabled = state.currentMonthIndex === 0;
           elements.nextMonth.disabled = state.currentMonthIndex === 11;
         } else {
-          const onFirstHalf = Math.floor(state.currentMonthIndex / 6) === 0;
-          elements.prevMonth.disabled = onFirstHalf;
-          elements.nextMonth.disabled = !onFirstHalf;
+          const currentGroup = Math.floor(state.currentMonthIndex / 6);
+          elements.prevMonth.disabled = currentGroup === 0;
+          elements.nextMonth.disabled = currentGroup === 1;
         }
       };
 
@@ -1076,7 +1095,9 @@
 
         afficherListeConges();
         afficherSoldes();
-        generateYear();
+        if (document.querySelectorAll('.month-card').length > 0) {
+          generateYear();
+        }
 
         // Reset du formulaire
         elements.congeDebut.value = '';
@@ -1088,7 +1109,9 @@
         state.congesPersonnels = state.congesPersonnels.filter(conge => conge.id !== id);
         afficherListeConges();
         afficherSoldes();
-        generateYear();
+        if (document.querySelectorAll('.month-card').length > 0) {
+          generateYear();
+        }
       };
 
       // Exposition globale pour les boutons de suppression
@@ -1236,7 +1259,9 @@
           const today = new Date();
           state.currentMonthIndex = (year === today.getFullYear()) ? today.getMonth() : 0;
 
-          setTimeout(checkMobileMode, 10);
+          setTimeout(() => {
+            checkMobileMode();
+          }, 10);
 
         } catch (error) {
           console.error('Erreur lors de la génération:', error);
